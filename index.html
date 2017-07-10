@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="js/lodash.js"></script>
+    <script type="text/javascript" src="js/handlebars-v4.0.10.js"></script>
+</head>
+<body>
+
+<div class="result-wrapper"></div>
+<script>
+    $(document).ready(function(){
+        var wrapper = $('.result-wrapper');
+        $.ajax({
+            method: "GET",
+            url: "http://agl-developer-test.azurewebsites.net/people.json",
+            dataType: "jsonp"
+        }).done(function(data){
+            console.log(data);
+
+            var personSource   = $("#person-template").html();
+            var personTemplate = Handlebars.compile(personSource);
+
+            var orderedData = _.orderBy(data,['name', 'age'], ['asc', 'desc']);
+            var persons = _.groupBy(orderedData, { gender: "Male" });
+
+            var male = {title: "Male", items: persons['true']};
+            var maleHtml   = personTemplate(male);
+
+            var female = {title: "Female", items: persons['false']};
+            var femaleHtml   = personTemplate(female);
+
+            wrapper.append(maleHtml);
+            wrapper.append(femaleHtml);
+
+
+            var petsSource   = $("#pets-template").html();
+            var petsTemplate = Handlebars.compile(petsSource);
+
+            var hasPets = _.filter(orderedData, 'pets', _.isArray());
+            var pets = [];
+            _.forEach(hasPets, function(val) {
+                pets.push(val.pets);
+//                console.log(pets);
+            });
+
+            pets = _.flattenDeep(pets);
+
+            var petsType = _.groupBy(pets, 'type');
+//            console.log(petsType);
+
+            var petsArr = [];
+            _.forEach(petsType, function(value, key) {
+                petsArr.push({type: key, items: value});
+//                console.log(key);
+//                console.log(value);
+            });
+            console.log(petsArr);
+
+            var petsHtml   = petsTemplate({category: petsArr});
+            wrapper.append(petsHtml);
+
+        });
+    });
+</script>
+<script id="person-template" type="text/x-handlebars-template">
+    <div class="entry-{{title}}">
+        <h1>{{title}}</h1>
+        <ul>
+            {{#each items}}
+            <li>{{name}} at {{age}} years old{{#if pets.length}} with {{pets.length}} pet(s){{/if}}</li>
+            {{/each}}
+        </ul>
+    </div>
+</script>
+
+<script id="pets-template" type="text/x-handlebars-template">
+    <div class="entry-{{title}}">
+        {{#each category}}
+        <h1>{{type}}</h1>
+        <ul>
+            {{#each items}}
+            <li>{{name}}</li>
+            {{/each}}
+        </ul>
+        {{/each}}
+    </div>
+</script>
+
+</body>
+</html>
